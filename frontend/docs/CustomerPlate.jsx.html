@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: CustomerPlate.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: CustomerPlate.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState } from "react";
+import styles from "../styles/CustomerScreen.module.css";
+import TextWrap from "./TextWrap";
+
+const sides = [
+  { name: "Chow Mein", image: "/imgs/foods/chow-mein.png", calories: 490, allergens: "Wheat, Soy" },
+  { name: "White Rice", image: "/imgs/foods/white-rice.png", calories: 380, allergens: "None" },
+  { name: "Fried Rice", image: "/imgs/foods/fried-rice.png", calories: 530, allergens: "Wheat, Soy" },
+  { name: "Super Greens", image: "/imgs/foods/super-greens.png", calories: 90, allergens: "None" },
+];
+
+const entrees = [
+  { name: "Orange Chicken", image: "/imgs/foods/orange-chicken.png", calories: 420, allergens: "Wheat, Soy, Eggs, Milk" },
+  { name: "Beijing Beef", image: "/imgs/foods/beijing-beef.png", calories: 690, allergens: "Wheat, Soy, Milk" },
+  { name: "Sweet Fire Chicken Breast", image: "/imgs/foods/sweetfire-chicken.png", calories: 440, allergens: "Wheat, Soy" },
+  { name: "Broccoli Beef", image: "/imgs/foods/broccoli-beef.png", calories: 120, allergens: "Wheat, Soy" },
+  { name: "Grilled Teriyaki Chicken", image: "/imgs/foods/teriyaki-chicken.png", calories: 340, allergens: "Wheat, Soy" },
+  { name: "Black Pepper Steak", image: "/imgs/foods/pepper-steak.png", calories: 180, allergens: "Wheat, Soy, Gluten", isPremium: true },
+  { name: "Mushroom Chicken Breast", image: "/imgs/foods/mushroom-chicken.png", calories: 170, allergens: "Wheat, Soy" },
+  { name: "Black Pepper Chicken", image: "/imgs/foods/black-pepper-chicken.png", calories: 280, allergens: "Wheat, Soy" },
+  { name: "Sesame Chicken Breast", image: "/imgs/foods/sesame-chicken-breast.png", calories: 420, allergens: "Wheat, Soy, Sesame" },
+  { name: "Bourbon Chicken", image: "/imgs/foods/bourbon-chicken.png", calories: 400, allergens: "Wheat, Soy, Sesame, Gluten, Eggs, Milk" },
+  { name: "String Bean Chicken Breast", image: "/imgs/foods/string-bean-chicken.png", calories: 190, allergens: "Wheat, Soy" },
+  { name: "Honey Walnut Shrimp", image: "/imgs/foods/honey-walnut-shrimp.png", calories: 370, allergens: "Wheat, Soy, Treenuts, Shellfish, Eggs, Milk", isPremium: true },
+];
+
+/**
+ * Represents a customer plate component that allows the user to select a side dish and two entrees.
+ * @param {{function}} onBack - Function to handle going back to the previous step.
+ * @param {{function}} onConfirm - Function to handle confirming the selected side and entrees.
+ * @returns A component with UI elements for selecting a side dish and two entrees.
+ */
+const CustomerPlate = ({ onBack, onConfirm }) => {
+  const [selectedSide, setSelectedSide] = useState(null);
+  const [selectedEntrees, setSelectedEntrees] = useState([null, null]); // Array for 2 entrees
+
+  /**
+   * Updates the selected side based on the input side value.
+   * @param {{string}} side - The side to set as selected.
+   * @returns None
+   */
+  const handleSideSelection = (side) => setSelectedSide(side);
+
+  /**
+   * Updates the selected entrees array based on the index and entree name provided.
+   * If the entree is premium, it adds a prefix 'PREMIUM' to the entree name.
+   * @param {{number}} index - The index of the entree in the selected entrees array.
+   * @param {{string}} entreeName - The name of the entree to be updated.
+   * @returns None
+   */
+  const handleEntreeSelection = (index, entreeName) => {
+    const newSelectedEntrees = [...selectedEntrees];
+    const entree = entrees.find(e => e.name === entreeName);
+    newSelectedEntrees[index] = entree?.isPremium ? `PREMIUM ${entreeName}` : entreeName;
+    setSelectedEntrees(newSelectedEntrees);
+  };
+
+  const selectedSideDetails = sides.find((side) => side.name === selectedSide);
+
+  /**
+   * Finds details of selected entrees from a list of entrees based on their names.
+   * @param {{string[]}} selectedEntrees - An array of selected entree names.
+   * @returns An array of entree details corresponding to the selected entrees.
+   */
+  const selectedEntreeDetails = selectedEntrees.map((entree) =>
+    entree ? entrees.find((item) => item.name === entree) : null
+  );
+
+  return (
+    &lt;div className={styles.mainContainer}>
+      &lt;h2>&lt;TextWrap>Plate - Select 1 Side and 2 Entrees&lt;/TextWrap>&lt;/h2>
+      &lt;div className={styles.selectionContainer}>
+        {/* Side Selection */}
+        &lt;div className={styles.sideSelection}>
+          &lt;h3>&lt;TextWrap>Sides&lt;/TextWrap>&lt;/h3>
+          &lt;div className={styles.sideOptions}>
+            {sides.map((side) => (
+              &lt;div
+                key={side.name}
+                className={`${styles.selectionImage} ${
+                  selectedSide === side.name ? styles.selected : ""
+                }`}
+                onClick={() => handleSideSelection(side.name)}
+              >
+                &lt;img src={side.image} alt={side.name} />
+                &lt;div>&lt;TextWrap>{side.name}&lt;/TextWrap>&lt;/div>
+                {selectedSide === side.name &amp;&amp; (
+                  &lt;div className={styles.nutritionalInfo}>
+                    &lt;p>&lt;TextWrap>Calories: &lt;/TextWrap>&lt;TextWrap>{side.calories}&lt;/TextWrap>&lt;/p>
+                    &lt;p>&lt;TextWrap>Allergens: &lt;/TextWrap>&lt;TextWrap>{side.allergens}&lt;/TextWrap>&lt;/p>
+                  &lt;/div>
+                )}
+              &lt;/div>
+            ))}
+          &lt;/div>
+        &lt;/div>
+
+        {/* Entree Selection */}
+        {[0, 1].map((index) => (
+          &lt;div key={index} className={styles.entreeSelection}>
+            &lt;h3>&lt;TextWrap>Entree &lt;/TextWrap>{index + 1}&lt;/h3>
+            &lt;div className={styles.entreeOptions}>
+              {entrees.map((entree) => (
+                &lt;div
+                  key={entree.name}
+                  className={`${styles.selectionImage} ${
+                    selectedEntrees[index] === entree.name || selectedEntrees[index] === `PREMIUM ${entree.name}`
+                      ? styles.selected
+                      : ""
+                  }`}
+                  onClick={() => handleEntreeSelection(index, entree.name)}
+                >
+                  &lt;img src={entree.image} alt={entree.name} />
+                  &lt;div>&lt;TextWrap>{entree.name}&lt;/TextWrap>&lt;/div>
+                  {(selectedEntrees[index] === entree.name || selectedEntrees[index] === `PREMIUM ${entree.name}`) &amp;&amp; (
+                    &lt;div className={styles.nutritionalInfo}>
+                      &lt;p>&lt;TextWrap>Calories: &lt;/TextWrap>&lt;TextWrap>{entree.calories}&lt;/TextWrap>&lt;/p>
+                      &lt;p>&lt;TextWrap>Allergens: &lt;/TextWrap>&lt;TextWrap>{entree.allergens}&lt;/TextWrap>&lt;/p>
+                      {entree.isPremium &amp;&amp; &lt;p className={styles.premiumTag}>&lt;TextWrap>Premium &lt;/TextWrap>(+$1.50)&lt;/p>}
+                    &lt;/div>
+                  )}
+                &lt;/div>
+              ))}
+            &lt;/div>
+          &lt;/div>
+        ))}
+      &lt;/div>
+
+      &lt;div className={styles.buttonContainer}>
+        &lt;button onClick={onBack} className={styles.backButton}>
+        &lt;TextWrap>Back&lt;/TextWrap>
+        &lt;/button>
+        &lt;button
+          onClick={() =>
+            onConfirm({ side: selectedSide, entrees: selectedEntrees })
+          }
+          className={styles.confirmButton}
+          disabled={!selectedSide || selectedEntrees.includes(null)} // Disable until selections are made
+        >
+          &lt;TextWrap>Confirm&lt;/TextWrap>
+        &lt;/button>
+      &lt;/div>
+    &lt;/div>
+  );
+};
+
+export default CustomerPlate;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#ChooseUser">ChooseUser</a></li><li><a href="global.html#Contrast">Contrast</a></li><li><a href="global.html#CustomerBigPlate">CustomerBigPlate</a></li><li><a href="global.html#CustomerBowl">CustomerBowl</a></li><li><a href="global.html#CustomerPlate">CustomerPlate</a></li><li><a href="global.html#CustomerScreen">CustomerScreen</a></li><li><a href="global.html#EmployeeManagement">EmployeeManagement</a></li><li><a href="global.html#EmployeeOrderScreen">EmployeeOrderScreen</a></li><li><a href="global.html#GoogleLoginButton">GoogleLoginButton</a></li><li><a href="global.html#GoogleSignUpButton">GoogleSignUpButton</a></li><li><a href="global.html#InfiniteCarousel">InfiniteCarousel</a></li><li><a href="global.html#InventoryScreen">InventoryScreen</a></li><li><a href="global.html#LoadingBackdrop">LoadingBackdrop</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Magnifier">Magnifier</a></li><li><a href="global.html#menuItems">menuItems</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Dec 10 2024 21:27:26 GMT-0600 (Central Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

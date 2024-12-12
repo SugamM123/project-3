@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/PriceManagementScreen.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/PriceManagementScreen.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useEffect, useState } from "react";
+import axios from "axios";
+import Navbar from "./Navbar";
+import styles from "../styles/PriceManagementScreen.module.css";
+import LoadingBackdrop from "./LoadingBackdrop";
+
+/**
+ * The MenuManagementScreen component allows users to view and modify menu item prices.
+ * It fetches the current prices from the backend, enables editing, and applies changes back to the server.
+ * @component
+ */
+const MenuManagementScreen = () => {
+  /**
+   * @type {boolean} loadingPrices - Indicates whether prices are currently being fetched or updated.
+   */
+  const [loadingPrices, setLoadingPrices] = useState(false);
+
+  /**
+   * @type {Array.&lt;{name: string, price: string}>} prices - The list of current prices fetched from the backend.
+   */
+  const [prices, setPrices] = useState([]);
+
+  /**
+   * @type {Array.&lt;{name: string, price: string}>} editedPrices - The list of prices currently being edited by the user.
+   */
+  const [editedPrices, setEditedPrices] = useState([]);
+
+  /**
+   * @type {string|null} error - Error message to display if a fetch or update operation fails.
+   */
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    /**
+     * Fetches the current menu prices from the backend.
+     * @async
+     * @function fetchPrices
+     */
+    const fetchPrices = async () => {
+      try {
+        setLoadingPrices(true);
+        const response = await axios.get(
+          "https://project-3-team-0g-backend.onrender.com/view-prices"
+        );
+        const pricesWithFloat = response.data.map((item) => ({
+          ...item,
+          price: parseFloat(item.price).toFixed(2), // Initialize with two decimal places
+        }));
+        setPrices(pricesWithFloat);
+        setEditedPrices(pricesWithFloat);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("Failed to fetch prices.");
+      } finally {
+        setLoadingPrices(false);
+      }
+    };
+    fetchPrices();
+  }, []);
+
+  /**
+   * Handles price input changes for a specific item.
+   * @param {number} index - The index of the item being edited.
+   * @param {string} newPrice - The new price value entered by the user.
+   */
+  const handlePriceChange = (index, newPrice) => {
+    const updatedPrices = editedPrices.map((item, i) =>
+      i === index ? { ...item, price: newPrice } : item
+    );
+    setEditedPrices(updatedPrices);
+  };
+
+  /**
+   * Formats the price to two decimal places when the input field loses focus.
+   * @param {number} index - The index of the item being formatted.
+   */
+  const handlePriceBlur = (index) => {
+    const updatedPrices = editedPrices.map((item, i) => {
+      if (i === index) {
+        const priceValue = parseFloat(item.price);
+        return {
+          ...item,
+          price: isNaN(priceValue) ? "0.00" : priceValue.toFixed(2),
+        };
+      }
+      return item;
+    });
+    setEditedPrices(updatedPrices);
+  };
+
+  /**
+   * Applies changes made to prices by sending the updated prices to the backend.
+   * Only sends prices that have been modified.
+   * @async
+   * @function applyChanges
+   */
+  const applyChanges = async () => {
+    const changedPrices = editedPrices
+      .filter((item, index) => item.price !== prices[index].price)
+      .map((item) => ({ name: item.name, price: parseFloat(item.price) }));
+
+    if (changedPrices.length > 0) {
+      try {
+        setLoadingPrices(true);
+        await axios.put(
+          "https://project-3-team-0g-backend.onrender.com/modify-prices",
+          changedPrices
+        );
+        setPrices(editedPrices);
+        setError(null); // Clear any previous error message
+      } catch (error) {
+        console.error("Error applying changes:", error);
+        setError("Failed to apply changes.");
+      } finally {
+        setLoadingPrices(false);
+      }
+    } else {
+      setError("No changes made");
+    }
+  };
+
+  return (
+    &lt;>
+      &lt;Navbar />
+      &lt;LoadingBackdrop loading={loadingPrices} />
+      &lt;div className={styles.mainContainer}>
+        &lt;div className={styles.priceContainer}>
+          {error &amp;&amp; &lt;p className={styles.errorText}>{error}&lt;/p>}
+          &lt;table className={styles.table}>
+            &lt;thead>
+              &lt;tr>
+                &lt;th>Name&lt;/th>
+                &lt;th>Price&lt;/th>
+              &lt;/tr>
+            &lt;/thead>
+            &lt;tbody>
+              {editedPrices.map((item, index) => (
+                &lt;tr key={item.name}>
+                  &lt;td>{item.name}&lt;/td>
+                  &lt;td>
+                    &lt;input
+                      type="number"
+                      value={item.price}
+                      step="0.01"
+                      onChange={(e) => handlePriceChange(index, e.target.value)}
+                      onBlur={() => handlePriceBlur(index)} // Apply formatting on blur
+                      className={styles.priceInput}
+                    />
+                  &lt;/td>
+                &lt;/tr>
+              ))}
+            &lt;/tbody>
+          &lt;/table>
+          &lt;button onClick={applyChanges} className={styles.applyButton}>
+            Apply Changes
+          &lt;/button>
+        &lt;/div>
+      &lt;/div>
+    &lt;/>
+  );
+};
+
+export default MenuManagementScreen;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#App">App</a></li><li><a href="global.html#ChooseUser">ChooseUser</a></li><li><a href="global.html#Contrast">Contrast</a></li><li><a href="global.html#CustomerBigPlate">CustomerBigPlate</a></li><li><a href="global.html#CustomerBowl">CustomerBowl</a></li><li><a href="global.html#CustomerPlate">CustomerPlate</a></li><li><a href="global.html#CustomerScreen">CustomerScreen</a></li><li><a href="global.html#EmployeeManagement">EmployeeManagement</a></li><li><a href="global.html#EmployeeOrderScreen">EmployeeOrderScreen</a></li><li><a href="global.html#GoogleLoginButton">GoogleLoginButton</a></li><li><a href="global.html#GoogleSignUpButton">GoogleSignUpButton</a></li><li><a href="global.html#InfiniteCarousel">InfiniteCarousel</a></li><li><a href="global.html#InventoryScreen">InventoryScreen</a></li><li><a href="global.html#LoadingBackdrop">LoadingBackdrop</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Magnifier">Magnifier</a></li><li><a href="global.html#MenuBoard">MenuBoard</a></li><li><a href="global.html#MenuBoardNoninteractive">MenuBoardNoninteractive</a></li><li><a href="global.html#MenuItemCard">MenuItemCard</a></li><li><a href="global.html#MenuManagementScreen">MenuManagementScreen</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#NavbarButton">NavbarButton</a></li><li><a href="global.html#OrderHistoryScreen">OrderHistoryScreen</a></li><li><a href="global.html#OrderItem">OrderItem</a></li><li><a href="global.html#ProtectedRoute">ProtectedRoute</a></li><li><a href="global.html#ReportsScreen">ReportsScreen</a></li><li><a href="global.html#RestockScreen">RestockScreen</a></li><li><a href="global.html#SizeSelectionModal">SizeSelectionModal</a></li><li><a href="global.html#SubmitOrderScreen">SubmitOrderScreen</a></li><li><a href="global.html#TextSizeControls">TextSizeControls</a></li><li><a href="global.html#TextWrap">TextWrap</a></li><li><a href="global.html#ToggleButtonGroup">ToggleButtonGroup</a></li><li><a href="global.html#WeatherNote">WeatherNote</a></li><li><a href="global.html#WeatherTimeDisplay">WeatherTimeDisplay</a></li><li><a href="global.html#applyChanges">applyChanges</a></li><li><a href="global.html#fetchData">fetchData</a></li><li><a href="global.html#fetchOrderDetails">fetchOrderDetails</a></li><li><a href="global.html#fetchOrders">fetchOrders</a></li><li><a href="global.html#fetchPrices">fetchPrices</a></li><li><a href="global.html#fetchProductUsage">fetchProductUsage</a></li><li><a href="global.html#fetchRestockInfo">fetchRestockInfo</a></li><li><a href="global.html#fetchTranslation">fetchTranslation</a></li><li><a href="global.html#fetchWeather">fetchWeather</a></li><li><a href="global.html#formatTime">formatTime</a></li><li><a href="global.html#getRandomColor">getRandomColor</a></li><li><a href="global.html#getWeatherIcon">getWeatherIcon</a></li><li><a href="global.html#handleAddToCart">handleAddToCart</a></li><li><a href="global.html#handleCancel">handleCancel</a></li><li><a href="global.html#handleRestock">handleRestock</a></li><li><a href="global.html#handleSend">handleSend</a></li><li><a href="global.html#handleSubmit">handleSubmit</a></li><li><a href="global.html#menuItems">menuItems</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Dec 11 2024 01:12:37 GMT-0600 (Central Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

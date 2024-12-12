@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Login.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Login.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import styles from "../styles/Login.module.css";
+import axios from "axios";
+import LoadingBackdrop from "./LoadingBackdrop";
+import GoogleLoginButton from "./GoogleLoginButton";
+
+/**
+ * Represents a Login component that allows users to log in with their email and password.
+ * @returns JSX element containing the login form and Google login button.
+ */
+function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem("user")) {
+      navigate("/employee-order");
+    }
+  }, []);
+
+  const handleSubmit = async (e) => {
+    setLoading(true);
+    e.preventDefault();
+    setError("");
+    try {
+      const response = await axios.post(
+        "https://project-3-team-0g-backend.onrender.com/verify-login",
+        {
+          email: email,
+          password: password,
+        }
+      );
+
+      if (response.data) {
+        const userData = {
+          id: response.data.id,
+          first_name: response.data.first_name,
+          last_name: response.data.last_name,
+          // email: response.data.email,
+          // phone_number: response.data.phone_number,
+          is_manager: response.data.is_manager,
+        };
+        localStorage.setItem("user", JSON.stringify(userData));
+        navigate("/employee-order");
+        setError(null);
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Invalid login credentials.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    &lt;div className={styles.loginContainer}>
+      &lt;LoadingBackdrop loading={loading} />
+      &lt;form className={styles.loginForm} onSubmit={handleSubmit}>
+        &lt;h2 className={styles.formTitle}>Employee Login&lt;/h2>
+        {error &amp;&amp; &lt;p className={styles.errorMessage}>{error}&lt;/p>}
+        &lt;div className={styles.formGroup}>
+          &lt;label htmlFor="email">Email:&lt;/label>
+          &lt;input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        &lt;/div>
+        &lt;div className={styles.formGroup}>
+          &lt;label htmlFor="password">Password:&lt;/label>
+          &lt;input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        &lt;/div>
+        &lt;button type="submit" className={styles.submitButton}>
+          Login
+        &lt;/button>
+        &lt;div className={styles.separator}>
+          &lt;span>or&lt;/span>
+        &lt;/div>
+        &lt;GoogleLoginButton setError={setError} setLoading={setLoading} />
+      &lt;/form>
+    &lt;/div>
+  );
+}
+
+export default Login;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#ChooseUser">ChooseUser</a></li><li><a href="global.html#Contrast">Contrast</a></li><li><a href="global.html#CustomerBigPlate">CustomerBigPlate</a></li><li><a href="global.html#CustomerBowl">CustomerBowl</a></li><li><a href="global.html#CustomerPlate">CustomerPlate</a></li><li><a href="global.html#CustomerScreen">CustomerScreen</a></li><li><a href="global.html#EmployeeManagement">EmployeeManagement</a></li><li><a href="global.html#EmployeeOrderScreen">EmployeeOrderScreen</a></li><li><a href="global.html#GoogleLoginButton">GoogleLoginButton</a></li><li><a href="global.html#GoogleSignUpButton">GoogleSignUpButton</a></li><li><a href="global.html#InfiniteCarousel">InfiniteCarousel</a></li><li><a href="global.html#InventoryScreen">InventoryScreen</a></li><li><a href="global.html#LoadingBackdrop">LoadingBackdrop</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Magnifier">Magnifier</a></li><li><a href="global.html#menuItems">menuItems</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Dec 10 2024 21:27:26 GMT-0600 (Central Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/CustomerScreen.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/CustomerScreen.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import styles from "../styles/CustomerScreen.module.css";
+import WeatherTimeDisplay from "./WeatherTimeDisplay";
+import CustomerBowl from "./CustomerBowl";
+import CustomerPlate from "./CustomerPlate";
+import CustomerBigPlate from "./CustomerBigPlate";
+import TextWrap from "./TextWrap";
+import axios from "axios";
+import { useLanguageContext } from "../contexts/LanguageContext";
+import TextSizeControls from "./TextSizeControls";
+import Magnifier from "./Magnifier";
+import Contrast from "./Contrast";
+
+
+/**
+ * Configuration object for menu items, including categories, names, images, and details.
+ * @constant
+ * @type {Object}
+ */
+
+// Menu items configuration with categories and their respective items
+const menuItems = {
+  Combo: [
+    {
+      name: "Bowl (1 Side + 1 Entree)",
+      image: "/imgs/meals/Bowl.png",
+      isComboOption: true,
+    },
+    {
+      name: "Plate (1 Side + 2 Entrees)",
+      image: "/imgs/meals/Plate.png",
+      isComboOption: true,
+    },
+    {
+      name: "Bigger Plate (1 Side + 3 Entrees)",
+      image: "/imgs/meals/BiggerPlate.png",
+      isComboOption: true,
+    },
+  ],
+  "A la Carte": [
+    {
+      name: "Orange Chicken",
+      image: "/imgs/foods/orange-chicken.png",
+      allergens: "Wheat, Soy, Eggs, Milk",
+      nutrition: "Calories: 420, Fat: 14g, Carbs: 45g, Protein: 14g",
+    },
+    {
+      name: "Beijing Beef",
+      image: "/imgs/foods/beijing-beef.png",
+      allergens: "Wheat, Soy, Milk",
+      nutrition: "Calories: 690, Fat: 35g, Carbs: 59g, Protein: 21g",
+    },
+    {
+      name: "Sweet Fire Chicken Breast",
+      image: "/imgs/foods/sweetfire-chicken.png",
+      allergens: "Wheat, Soy",
+      nutrition: "Calories: 440, Fat: 15g, Carbs: 47g, Protein: 13g",
+    },
+    {
+      name: "Broccoli Beef",
+      image: "/imgs/foods/broccoli-beef.png",
+      allergens: "Wheat, Soy",
+      nutrition: "Calories: 120, Fat: 9g, Carbs: 12g, Protein: 10g",
+    },
+    {
+      name: "Grilled Teriyaki Chicken",
+      image: "/imgs/foods/teriyaki-chicken.png",
+      allergens: "Wheat, Soy",
+      nutrition: "Calories: 340, Fat: 13g, Carbs: 14g, Protein: 41g",
+    },
+    {
+      name: "Black Pepper Steak",
+      image: "/imgs/foods/pepper-steak.png",
+      isPremium: true,
+      allergens: "Wheat, Soy, Gluten",
+      nutrition: "Calories: 180, Fat: 7g, Carbs: 10g, Protein: 19g",
+    },
+    {
+      name: "Mushroom Chicken Breast",
+      image: "/imgs/foods/mushroom-chicken.png",
+      allergens: "Wheat, Soy",
+      nutrition: "Calories: 170, Fat: 9g, Carbs: 11g, Protein: 12g",
+    },
+    {
+      name: "Sesame Chicken Breast",
+      image: "/imgs/foods/sesame-chicken-breast.png",
+      allergens: "Wheat, Soy, Sesame",
+      nutrition: "Calories: 420, Fat: 22g, Carbs: 40g, Protein: 16g",
+    },
+    {
+      name: "Bourbon Chicken",
+      image: "/imgs/foods/bourbon-chicken.png",
+      allergens: "Wheat, Soy, Sesame, Gluten, Eggs, Milk",
+      nutrition: "Calories: 400, Fat: 5g, Carbs: 40g, Protein: 14g",
+    },
+    {
+      name: "String Bean Chicken Breast",
+      image: "/imgs/foods/string-bean-chicken.png",
+      allergens: "Wheat, Soy",
+      nutrition: "Calories: 190, Fat: 9g, Carbs: 13g, Protein: 14g",
+    },
+    {
+      name: "Honey Walnut Shrimp",
+      image: "/imgs/foods/honey-walnut-shrimp.png",
+      isPremium: true,
+      allergens: "Wheat, Soy, Treenuts, Shellfish, Eggs, Milk",
+      nutrition: "Calories: 370, Fat: 23g, Carbs: 35g, Protein: 13g",
+    },
+    {
+      name: "Chow Mein",
+      image: "/imgs/foods/chow-mein.png",
+      allergens: "Wheat, Soy",
+      nutrition: "Calories: 490, Fat: 22g, Carbs: 65g, Protein: 13g",
+    },
+    {
+      name: "Fried Rice",
+      image: "/imgs/foods/fried-rice.png",
+      allergens: "Wheat, Soy",
+      nutrition: "Calories: 530, Fat: 16g, Carbs: 82g, Protein: 12g",
+    },
+    {
+      name: "White Steamed Rice",
+      image: "/imgs/foods/white-rice.png",
+      allergens: "None",
+      nutrition: "Calories: 200, Fat: 0g, Carbs: 87g, Protein: 7g",
+    },
+    {
+      name: "Super Greens",
+      image: "/imgs/foods/super-greens.png",
+      allergens: "None",
+      nutrition: "Calories: 50, Fat: 3g, Carbs: 10g, Protein: 6g",
+    },
+  ],
+  Appetizers: [
+    {
+      name: "Chicken Egg Roll",
+      image: "/imgs/foods/chicken-eggroll.png",
+      allergens: "Wheat, Soy, Eggs, Milk",
+      nutrition: "Calories: 200, Fat: 10g, Carbs: 20g, Protein: 6g",
+    },
+    {
+      name: "Veggie Spring Roll",
+      image: "/imgs/foods/veggie-springroll.png",
+      allergens: "Wheat, Soy, Milk",
+      nutrition: "Calories: 160, Fat: 8g, Carbs: 27g, Protein: 3g",
+    },
+    {
+      name: "Cream Cheese Rangoon",
+      image: "/imgs/foods/rangoon.png",
+      allergens: "Wheat, Eggs, Milk",
+      nutrition: "Calories: 190, Fat: 8g, Carbs: 24g, Protein: 5g",
+    },
+    {
+      name: "Apple Pie Roll",
+      image: "/imgs/foods/apple-pie-roll.png",
+      allergens: "Wheat",
+      nutrition: "Calories: 150, Fat: 3g, Carbs: 30g, Protein: 2g",
+    },
+  ],
+  Drinks: [
+    { name: "Fountain Drink", image: "/imgs/foods/fountain.png" },
+    { name: "Sweet Tea", image: "/imgs/foods/sweet-tea.png" },
+    { name: "Bottled Water", image: "/imgs/foods/water.png" },
+  ],
+};
+
+/**
+ * Main component for the customer screen.
+ * @component
+ */
+
+const CustomerScreen = () => {
+  // State management for various UI controls and data
+  const { language } = useLanguageContext();
+
+  const navigate = useNavigate();
+  const [selectedCombo, setSelectedCombo] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("Combo");
+  const [cart, setCart] = useState([]);
+  const [showCart, setShowCart] = useState(false);
+  const [showSizeSelection, setShowSizeSelection] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [prices, setPrices] = useState({
+    Combo: {},
+    "A la Carte": {
+      regular: {},
+      premium: {},
+    },
+    Appetizers: {},
+    Drinks: {},
+  });
+  const [textSizeMultiplier, setTextSizeMultiplier] = useState("1");
+
+  // Initialize component by clearing user data and fetching prices
+  useEffect(() => {
+    localStorage.removeItem("user");
+    fetchPrices();
+  }, []);
+
+   /**
+   * Fetches menu prices from the backend and updates state.
+   * @async
+   */
+  // Fetch menu prices from the backend
+  const fetchPrices = async () => {
+    try {
+      console.log("Fetching prices...");
+      const response = await axios.get(
+        "https://project-3-team-0g-backend.onrender.com/get-customer-prices"
+      );
+      console.log("Received prices:", response.data);
+      setPrices(response.data);
+    } catch (error) {
+      console.error("Error fetching prices:", error);
+    }
+  };
+
+  /**
+   * Navigates the user back to the home screen.
+   */
+  const handleLogoClick = () => {
+    navigate("/");
+  };
+
+  const handleBack = () => setSelectedCombo(null);
+
+  /**
+   * Handles combo meal selection and adds to cart.
+   * @param {Object} comboSelection - Selected combo meal details.
+   */
+  const handleConfirm = (comboSelection) => {
+    // Check if any selected entree is premium
+    const hasPremiumEntree =
+      comboSelection.entrees?.some((entreeName) =>
+        entreeName.includes("PREMIUM")
+      ) ||
+      comboSelection.entree?.includes("PREMIUM") ||
+      false;
+
+    // Get base combo price
+    let comboPrice = prices.Combo[selectedCombo] || 0;
+
+    // Add premium upcharge if applicable
+    if (hasPremiumEntree) {
+      comboPrice += prices.Combo.premiumUpcharge || 0;
+    }
+
+    const comboImage =
+      menuItems.Combo.find((item) => item.name.startsWith(selectedCombo))
+        ?.image || "/imgs/meals/default.png";
+
+    const cartItem = {
+      type: selectedCombo,
+      details: comboSelection,
+      price: comboPrice,
+      id: Date.now(),
+      image: comboImage,
+    };
+
+    setCart([...cart, cartItem]);
+    setSelectedCombo(null);
+  };
+
+/**
+   * Adds an individual item to the cart.
+   * @param {Object} item - The item to add to the cart.
+   * @param {string|null} size - The size of the item (if applicable).
+   */  const addToCart = (item, size = null) => {
+    let price;
+
+    if (selectedCategory === "A la Carte") {
+      price = item.isPremium
+        ? prices["A la Carte"].premium[size]
+        : prices["A la Carte"].regular[size];
+    } else if (selectedCategory === "Appetizers") {
+      price = prices["Appetizers"][size];
+    } else if (selectedCategory === "Drinks") {
+      price = prices.Drinks[size];
+    }
+
+    const cartItem = {
+      ...item,
+      id: Date.now(),
+      size: size,
+      quantity: 1,
+      price: price,
+      image: item.image,
+    };
+    setCart((prevCart) => [...prevCart, cartItem]);
+    setShowCart(true);
+  };
+
+  // Handle clicks on menu items - either show combo options or size selection
+  const handleItemClick = (item) => {
+    if (item.isComboOption) {
+      setSelectedCombo(item.name.split("(")[0].trim());
+    } else if (
+      ["A la Carte", "Appetizers", "Drinks"].includes(selectedCategory)
+    ) {
+      setSelectedItem(item);
+      setShowSizeSelection(true);
+    }
+  };
+
+  // rocess size selection for non-combo items
+  const handleSizeSelect = (size) => {
+    if (selectedItem) {
+      addToCart(selectedItem, size);
+    }
+    setShowSizeSelection(false);
+    setSelectedItem(null);
+  };
+
+  /**
+   * Calculates the total cost of items in the cart.
+   * @returns {string} - The total price as a string.
+   */  const calculateTotal = () => {
+    return cart
+      .reduce((total, item) => total + (item.price || 0), 0)
+      .toFixed(2);
+  };
+
+/**
+   * Handles checkout and navigates to the order submission page.
+   */  const handleCheckout = () => {
+    if (cart.length === 0) return;
+
+    navigate("/submit-order", {
+      state: {
+        cart: cart,
+        total: calculateTotal(),
+      },
+    });
+  };
+
+  // Render appropriate combo selection component based on user choice
+  if (selectedCombo === "Bowl") {
+    return &lt;CustomerBowl onBack={handleBack} onConfirm={handleConfirm} />;
+  } else if (selectedCombo === "Plate") {
+    return &lt;CustomerPlate onBack={handleBack} onConfirm={handleConfirm} />;
+  } else if (selectedCombo === "Bigger Plate") {
+    return &lt;CustomerBigPlate onBack={handleBack} onConfirm={handleConfirm} />;
+  }
+
+  return (
+    &lt;div className={styles.mainContainer}>
+      {/* Header section with logo, weather display, and cart */}
+      &lt;div className={styles.header}>
+        &lt;img
+          src="/imgs/logo.svg"
+          alt="Panda Express Logo"
+          className={styles.logo}
+          onClick={handleLogoClick}
+          style={{ cursor: "pointer" }}
+        />
+        &lt;WeatherTimeDisplay />
+        &lt;div className={styles.cartContainer}>
+          &lt;button
+            className={styles.cartButton}
+            onClick={() => setShowCart(!showCart)}
+          >
+            &lt;TextWrap>Cart&lt;/TextWrap> ({cart.length})
+          &lt;/button>
+          {showCart &amp;&amp; cart.length > 0 &amp;&amp; (
+            &lt;div className={styles.cartDropdown}>
+              &lt;div className={styles.cartItems}>
+                {cart.map((item) =>
+                  item.details ? (
+                    // Render for combo meal (when item.details exists)
+                    &lt;div key={item.id} className={styles.cartItem}>
+                      &lt;img
+                        src={item.image || "/imgs/meals/default.png"}
+                        alt="Meal option"
+                      />
+                      &lt;div className={styles.cartItemDetails}>
+                        &lt;h3>
+                          &lt;TextWrap>Combo Meal&lt;/TextWrap>
+                        &lt;/h3>
+                        {item.details.entrees &amp;&amp; (
+                          &lt;p>
+                            &lt;strong>
+                              &lt;TextWrap>Entrees:&lt;/TextWrap>
+                            &lt;/strong>{" "}
+                            &lt;TextWrap>{item.details.entrees.join(", ")}&lt;/TextWrap>
+                          &lt;/p>
+                        )}
+                        {item.details.side &amp;&amp; (
+                          &lt;p>
+                            
+                              &lt;strong>&lt;TextWrap>Side&lt;/TextWrap>:&lt;/strong>{" "}
+                            
+                            &lt;TextWrap>{item.details.side}&lt;/TextWrap>
+                          &lt;/p>
+                        )}
+                        &lt;p>${(item.price || 0).toFixed(2)}&lt;/p>
+                      &lt;/div>
+                    &lt;/div>
+                  ) : (
+                    // Render for non-combo items (when item.details does not exist)
+                    &lt;div key={item.id} className={styles.cartItem}>
+                      &lt;img src={item.image} alt={item.name} />
+                      &lt;div className={styles.cartItemDetails}>
+                        &lt;h3>{item.name}&lt;/h3>
+                        {item.size &amp;&amp; &lt;p>Size: {item.size}&lt;/p>}
+                        &lt;p>${(item.price || 0).toFixed(2)}&lt;/p>
+                      &lt;/div>
+                    &lt;/div>
+                  )
+                )}
+              &lt;/div>
+              &lt;div className={styles.cartTotal}>
+                &lt;h3>
+                  &lt;TextWrap>Total&lt;/TextWrap>: ${calculateTotal()}
+                &lt;/h3>
+                &lt;button
+                  className={styles.checkoutButton}
+                  onClick={handleCheckout}
+                  disabled={cart.length === 0}
+                >
+                  &lt;TextWrap>Checkout&lt;/TextWrap>
+                &lt;/button>
+              &lt;/div>
+            &lt;/div>
+          )}
+        &lt;/div>
+      &lt;/div>
+      &lt;div className={styles.content}>
+        {/* Category selection buttons */}
+        &lt;div className={styles.categories}>
+          {Object.keys(menuItems).map((category) => (
+            &lt;button
+              key={category}
+              className={`${styles.categoryButton} ${
+                selectedCategory === category ? styles.selected : ""
+              }`}
+              onClick={() => setSelectedCategory(category)}
+            >
+              &lt;TextWrap>{category}&lt;/TextWrap>
+            &lt;/button>
+          ))}
+        &lt;/div>
+        {/* Menu items grid display */}
+        &lt;div className={styles.menuItems}>
+          {menuItems[selectedCategory].map((item) => (
+            &lt;div
+              key={item.name}
+              className={styles.menuItem}
+              onClick={() => handleItemClick(item)}
+            >
+              &lt;img src={item.image} alt={item.name} />
+              &lt;div className={styles.itemName}>
+                &lt;TextWrap>{item.name}&lt;/TextWrap>
+              &lt;/div>
+              {item.isNew &amp;&amp; (
+                &lt;div className={styles.newTag}>
+                  &lt;TextWrap>New&lt;/TextWrap>
+                &lt;/div>
+              )}
+              {item.isPremium &amp;&amp; (
+                &lt;div className={styles.premiumTag}>
+                  &lt;TextWrap>Premium&lt;/TextWrap>
+                &lt;/div>
+              )}
+              {item.allergens &amp;&amp; (
+                &lt;p>
+                  &lt;TextWrap>Allergens:&lt;/TextWrap>
+                  &lt;TextWrap>{item.allergens}&lt;/TextWrap>
+                &lt;/p>
+              )}
+
+              {item.nutrition &amp;&amp; (
+                &lt;p>
+                  &lt;TextWrap>Nutrition:&lt;/TextWrap>
+                  &lt;TextWrap>{item.nutrition}&lt;/TextWrap>
+                &lt;/p>
+              )}
+            &lt;/div>
+          ))}
+        &lt;/div>
+      &lt;/div>
+      {/* Size selection modal for non-combo items */}
+      {showSizeSelection &amp;&amp; selectedItem &amp;&amp; (
+        &lt;div
+          className={styles.modalOverlay}
+          onClick={() => setShowSizeSelection(false)}
+        >
+          &lt;div
+            className={styles.sizeModal}
+            onClick={(e) => e.stopPropagation()}
+          >
+            &lt;img
+              src={selectedItem.image}
+              alt={selectedItem.name}
+              className={styles.modalImage}
+            />
+            &lt;h2>
+              &lt;TextWrap>{selectedItem.name}&lt;/TextWrap>
+            &lt;/h2>
+            &lt;div className={styles.sizeOptions}>
+              {selectedCategory === "A la Carte" &amp;&amp; (
+                &lt;>
+                  &lt;button onClick={() => handleSizeSelect("Small")}>
+                    Small - $
+                    {selectedItem?.isPremium
+                      ? prices["A la Carte"].premium.Small.toFixed(2)
+                      : prices["A la Carte"].regular.Small.toFixed(2)}
+                  &lt;/button>
+                  &lt;button onClick={() => handleSizeSelect("Medium")}>
+                    Medium - $
+                    {selectedItem?.isPremium
+                      ? prices["A la Carte"].premium.Medium.toFixed(2)
+                      : prices["A la Carte"].regular.Medium.toFixed(2)}
+                  &lt;/button>
+                  &lt;button onClick={() => handleSizeSelect("Large")}>
+                    Large - $
+                    {selectedItem?.isPremium
+                      ? prices["A la Carte"].premium.Large.toFixed(2)
+                      : prices["A la Carte"].regular.Large.toFixed(2)}
+                  &lt;/button>
+                &lt;/>
+              )}
+              {selectedCategory === "Appetizers" &amp;&amp; (
+                &lt;>
+                  &lt;button onClick={() => handleSizeSelect("Small")}>
+                    Small - ${prices["Appetizers"].Small.toFixed(2)}
+                  &lt;/button>
+                  &lt;button onClick={() => handleSizeSelect("Large")}>
+                    Large - ${prices["Appetizers"].Large.toFixed(2)}
+                  &lt;/button>
+                &lt;/>
+              )}
+              {selectedCategory === "Drinks" &amp;&amp; (
+                &lt;>
+                  &lt;button onClick={() => handleSizeSelect("Small")}>
+                    Small - ${prices.Drinks.Small.toFixed(2)}
+                  &lt;/button>
+                  &lt;button onClick={() => handleSizeSelect("Medium")}>
+                    Medium - ${prices.Drinks.Medium.toFixed(2)}
+                  &lt;/button>
+                  &lt;button onClick={() => handleSizeSelect("Large")}>
+                    Large - ${prices.Drinks.Large.toFixed(2)}
+                  &lt;/button>
+                &lt;/>
+              )}
+            &lt;/div>
+          &lt;/div>
+        &lt;/div>
+      )}
+      &lt;TextSizeControls onSizeChange={setTextSizeMultiplier} />
+      &lt;Magnifier />
+      &lt;Contrast />
+    &lt;/div>
+  );
+};
+
+export default CustomerScreen;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#App">App</a></li><li><a href="global.html#ChooseUser">ChooseUser</a></li><li><a href="global.html#Contrast">Contrast</a></li><li><a href="global.html#CustomerBigPlate">CustomerBigPlate</a></li><li><a href="global.html#CustomerBowl">CustomerBowl</a></li><li><a href="global.html#CustomerPlate">CustomerPlate</a></li><li><a href="global.html#CustomerScreen">CustomerScreen</a></li><li><a href="global.html#EmployeeManagement">EmployeeManagement</a></li><li><a href="global.html#EmployeeOrderScreen">EmployeeOrderScreen</a></li><li><a href="global.html#GoogleLoginButton">GoogleLoginButton</a></li><li><a href="global.html#GoogleSignUpButton">GoogleSignUpButton</a></li><li><a href="global.html#InfiniteCarousel">InfiniteCarousel</a></li><li><a href="global.html#InventoryScreen">InventoryScreen</a></li><li><a href="global.html#LoadingBackdrop">LoadingBackdrop</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Magnifier">Magnifier</a></li><li><a href="global.html#MenuBoard">MenuBoard</a></li><li><a href="global.html#MenuBoardNoninteractive">MenuBoardNoninteractive</a></li><li><a href="global.html#MenuItemCard">MenuItemCard</a></li><li><a href="global.html#MenuManagementScreen">MenuManagementScreen</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#NavbarButton">NavbarButton</a></li><li><a href="global.html#OrderHistoryScreen">OrderHistoryScreen</a></li><li><a href="global.html#OrderItem">OrderItem</a></li><li><a href="global.html#ProtectedRoute">ProtectedRoute</a></li><li><a href="global.html#ReportsScreen">ReportsScreen</a></li><li><a href="global.html#RestockScreen">RestockScreen</a></li><li><a href="global.html#SizeSelectionModal">SizeSelectionModal</a></li><li><a href="global.html#SubmitOrderScreen">SubmitOrderScreen</a></li><li><a href="global.html#TextSizeControls">TextSizeControls</a></li><li><a href="global.html#TextWrap">TextWrap</a></li><li><a href="global.html#ToggleButtonGroup">ToggleButtonGroup</a></li><li><a href="global.html#WeatherNote">WeatherNote</a></li><li><a href="global.html#WeatherTimeDisplay">WeatherTimeDisplay</a></li><li><a href="global.html#applyChanges">applyChanges</a></li><li><a href="global.html#fetchData">fetchData</a></li><li><a href="global.html#fetchOrderDetails">fetchOrderDetails</a></li><li><a href="global.html#fetchOrders">fetchOrders</a></li><li><a href="global.html#fetchPrices">fetchPrices</a></li><li><a href="global.html#fetchProductUsage">fetchProductUsage</a></li><li><a href="global.html#fetchRestockInfo">fetchRestockInfo</a></li><li><a href="global.html#fetchTranslation">fetchTranslation</a></li><li><a href="global.html#fetchWeather">fetchWeather</a></li><li><a href="global.html#formatTime">formatTime</a></li><li><a href="global.html#getRandomColor">getRandomColor</a></li><li><a href="global.html#getWeatherIcon">getWeatherIcon</a></li><li><a href="global.html#handleAddToCart">handleAddToCart</a></li><li><a href="global.html#handleCancel">handleCancel</a></li><li><a href="global.html#handleRestock">handleRestock</a></li><li><a href="global.html#handleSend">handleSend</a></li><li><a href="global.html#handleSubmit">handleSubmit</a></li><li><a href="global.html#menuItems">menuItems</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Dec 11 2024 01:12:37 GMT-0600 (Central Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

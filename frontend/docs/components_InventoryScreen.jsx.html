@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/InventoryScreen.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/InventoryScreen.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState, useEffect } from "react";
+import axios from "axios"; // needed for links
+import Navbar from "./Navbar";
+import "../styles/InventoryScreen.css";
+import LoadingBackdrop from "./LoadingBackdrop";
+/**
+ * Functional component for the Inventory Screen.
+ * Manages state for ednm, loading, inve, and datai using useState.
+ * Uses useEffect to call getInve on component mount.
+ * getInve is an asynchronous function that fetches inventory data.
+ * Renders a list of items with edit and delete buttons.
+ * @returns JSX element representing the Inventory Screen.
+ */
+const InventoryScreen = () => {
+  const [ednm, setEdnm] = useState(null); // these are the state variable being used
+  const [loading, setLoading] = useState(false);
+  const [inve, setInve] = useState([]); // for names list of inv and format
+  const [datai, setDatai] = useState({ name: "", quantity: "", unit: "" });
+  /**
+   * useEffect hook that calls the getInve function when the component mounts.
+   * @returns None
+   */
+  useEffect(() => {
+    getInve();
+  }, []); // getting data
+  /**
+   * Asynchronously fetches data from a specified URL using axios and sets the retrieved data to the 'Inve' state.
+   * Also handles loading state and error logging.
+   * @returns None
+   */
+  const getInve = async () => {
+    try {
+      setLoading(true);
+      const resp = await axios.get(
+        "https://project-3-team-0g-backend.onrender.com/inventory"
+      ); // getting fectched inv
+      setInve(resp.data); // updating with recieved
+    } catch (error) {
+      console.error("error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  /**
+   * Asynchronously adds or updates data based on the presence of 'ednm' in the input event.
+   * If 'ednm' is present, it updates the existing data using a PUT request, otherwise it adds new data using a POST request.
+   * @param {Event} e - The event object to prevent the default behavior.
+   * @returns None
+   */
+  const addUp = async (e) => {
+    e.preventDefault(); // for adding and updating
+    try {
+      if (ednm) {
+        // this is for updating
+        setLoading(true);
+
+        await axios.put(
+          `https://project-3-team-0g-backend.onrender.com/inventory/${ednm}`,
+          datai
+        );
+        setInve((prevInve) =>
+          prevInve.map((itm) =>
+            itm.name === ednm ? { ...itm, ...datai } : itm
+          )
+        ); // keeps edited items in same position
+      } else {
+        setLoading(true);
+
+        await axios.post(
+          "https://project-3-team-0g-backend.onrender.com/inventory",
+          datai
+        ); // this is for inv adding
+        setInve((prevInve) => [{ ...datai }, ...prevInve]);
+      } // new item on top
+      setDatai({ name: "", quantity: "", unit: "" }); // go back to original
+      setEdnm(null);
+    } catch (error) {
+      console.error("error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  /**
+   * Handles the deletion of a resource with the given name.
+   * @param {string} name - The name of the resource to delete.
+   * @returns {Promise&lt;void>} - A promise that resolves once the deletion is complete.
+   */
+  const handledel = async (name) => {
+    try {
+      // to use deleting property ^_
+      setLoading(true);
+      await axios.delete(
+        `https://project-3-team-0g-backend.onrender.com/inventory/${name}`
+      );
+      getInve(); // update
+    } catch (error) {
+      console.error("Delete Malfunction:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  /**
+   * Handles the edit functionality for an item.
+   * @param {{object}} itm - The item to be edited.
+   * @returns None
+   */
+  const handledit = (itm) => {
+    setDatai(itm);
+    setEdnm(itm.name);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  return (
+    &lt;>
+      &lt;Navbar />
+      &lt;LoadingBackdrop loading={loading} />
+      &lt;div className="inventory-container">
+        &lt;h1>Inventory Viewer&lt;/h1>
+        {}
+        &lt;form onSubmit={addUp}>
+          &lt;input
+            type="text"
+            placeholder="Name"
+            value={datai.name}
+            onChange={(e) => setDatai({ ...datai, name: e.target.value })}
+            disabled={!!ednm}
+            required
+          />
+          &lt;input
+            type="number"
+            placeholder="Quantity"
+            value={datai.quantity}
+            onChange={(e) =>
+              setDatai({ ...datai, quantity: parseFloat(e.target.value) })
+            }
+            required
+          />
+          &lt;input
+            type="text"
+            placeholder="Unit"
+            value={datai.unit}
+            onChange={(e) => setDatai({ ...datai, unit: e.target.value })}
+            required
+          />
+          &lt;button type="submit">{ednm ? "Update" : "Add"} Item&lt;/button>
+          {ednm &amp;&amp; (
+            &lt;button
+              type="button"
+              onClick={() => {
+                setDatai({ name: "", quantity: "", unit: "" });
+                setEdnm(null);
+              }}
+            >
+              Cancel
+            &lt;/button>
+          )}
+        &lt;/form>
+        {}
+        &lt;ul>
+          {inve.map((itm) => (
+            &lt;li key={itm.name}>
+              &lt;div>
+                &lt;strong>{itm.name}&lt;/strong>: {itm.quantity} {itm.unit}
+              &lt;/div>{" "}
+              &lt;div>
+                &lt;button onClick={() => handledit(itm)}>Edit&lt;/button>
+                &lt;button onClick={() => handledel(itm.name)}>Delete&lt;/button>
+              &lt;/div>{" "}
+            &lt;/li>
+          ))}{" "}
+        &lt;/ul>{" "}
+      &lt;/div>{" "}
+    &lt;/>
+  );
+};
+export default InventoryScreen;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#App">App</a></li><li><a href="global.html#ChooseUser">ChooseUser</a></li><li><a href="global.html#Contrast">Contrast</a></li><li><a href="global.html#CustomerBigPlate">CustomerBigPlate</a></li><li><a href="global.html#CustomerBowl">CustomerBowl</a></li><li><a href="global.html#CustomerPlate">CustomerPlate</a></li><li><a href="global.html#CustomerScreen">CustomerScreen</a></li><li><a href="global.html#EmployeeManagement">EmployeeManagement</a></li><li><a href="global.html#EmployeeOrderScreen">EmployeeOrderScreen</a></li><li><a href="global.html#GoogleLoginButton">GoogleLoginButton</a></li><li><a href="global.html#GoogleSignUpButton">GoogleSignUpButton</a></li><li><a href="global.html#InfiniteCarousel">InfiniteCarousel</a></li><li><a href="global.html#InventoryScreen">InventoryScreen</a></li><li><a href="global.html#LoadingBackdrop">LoadingBackdrop</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Magnifier">Magnifier</a></li><li><a href="global.html#MenuBoard">MenuBoard</a></li><li><a href="global.html#MenuBoardNoninteractive">MenuBoardNoninteractive</a></li><li><a href="global.html#MenuItemCard">MenuItemCard</a></li><li><a href="global.html#MenuManagementScreen">MenuManagementScreen</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#NavbarButton">NavbarButton</a></li><li><a href="global.html#OrderHistoryScreen">OrderHistoryScreen</a></li><li><a href="global.html#OrderItem">OrderItem</a></li><li><a href="global.html#ProtectedRoute">ProtectedRoute</a></li><li><a href="global.html#ReportsScreen">ReportsScreen</a></li><li><a href="global.html#RestockScreen">RestockScreen</a></li><li><a href="global.html#SizeSelectionModal">SizeSelectionModal</a></li><li><a href="global.html#SubmitOrderScreen">SubmitOrderScreen</a></li><li><a href="global.html#TextSizeControls">TextSizeControls</a></li><li><a href="global.html#TextWrap">TextWrap</a></li><li><a href="global.html#ToggleButtonGroup">ToggleButtonGroup</a></li><li><a href="global.html#WeatherNote">WeatherNote</a></li><li><a href="global.html#WeatherTimeDisplay">WeatherTimeDisplay</a></li><li><a href="global.html#applyChanges">applyChanges</a></li><li><a href="global.html#fetchData">fetchData</a></li><li><a href="global.html#fetchOrderDetails">fetchOrderDetails</a></li><li><a href="global.html#fetchOrders">fetchOrders</a></li><li><a href="global.html#fetchPrices">fetchPrices</a></li><li><a href="global.html#fetchProductUsage">fetchProductUsage</a></li><li><a href="global.html#fetchRestockInfo">fetchRestockInfo</a></li><li><a href="global.html#fetchTranslation">fetchTranslation</a></li><li><a href="global.html#fetchWeather">fetchWeather</a></li><li><a href="global.html#formatTime">formatTime</a></li><li><a href="global.html#getRandomColor">getRandomColor</a></li><li><a href="global.html#getWeatherIcon">getWeatherIcon</a></li><li><a href="global.html#handleAddToCart">handleAddToCart</a></li><li><a href="global.html#handleCancel">handleCancel</a></li><li><a href="global.html#handleRestock">handleRestock</a></li><li><a href="global.html#handleSend">handleSend</a></li><li><a href="global.html#handleSubmit">handleSubmit</a></li><li><a href="global.html#menuItems">menuItems</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Dec 11 2024 01:12:37 GMT-0600 (Central Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

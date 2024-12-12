@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/RestockScreen.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/RestockScreen.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useEffect, useState } from "react";
+import Navbar from "./Navbar";
+import styles from "../styles/RestockScreen.module.css";
+import LoadingBackdrop from "./LoadingBackdrop";
+
+/**
+ * The RestockScreen component facilitates inventory restocking decisions.
+ * It integrates with an AI assistant to recommend restocking items and quantities.
+ * Users can send queries, view recommendations, and execute restock updates.
+ * @component
+ */
+const RestockScreen = () => {
+  /**
+   * @type {boolean} loading - Indicates whether data is being loaded.
+   */
+  const [loading, setLoading] = useState(false);
+
+  /**
+   * @type {Array.&lt;{sender: string, text: string}>} messages - Chat history between the user and the AI assistant.
+   */
+  const [messages, setMessages] = useState([]);
+
+  /**
+   * @type {string} input - The user's input message for the AI assistant.
+   */
+  const [input, setInput] = useState("");
+
+  /**
+   * @type {Object} prePrompt - The system's predefined instructions for the AI assistant.
+   * @property {string} sender - Identifies the message sender as "system".
+   * @property {string} text - The AI's predefined behavior and context.
+   */
+  const [prePrompt, setPrePrompt] = useState({
+    sender: "system",
+    text: "You are a helpful assistant. Always provide clear, concise responses. Your role is to help the manager of Panda Express with inventory restocking decisions. Provide JSON payloads suitable for updating inventory using the 'mass-inventory-update' API.",
+  });
+
+  /**
+   * @type {string|null} error - Error message for failed operations.
+   */
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    /**
+     * Fetches current inventory restock information and updates the prePrompt.
+     * @async
+     * @function fetchRestockInfo
+     */
+    const fetchRestockInfo = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          "https://project-3-team-0g-backend.onrender.com/inventory-restock-info"
+        );
+        if (!response.ok) throw new Error("Failed to fetch restock information.");
+        const data = await response.json();
+        const updatedPrePrompt = {
+          sender: "system",
+          text: `${prePrompt.text} Here is the current restock information: ${JSON.stringify(
+            data
+          )} When asked to pick top K items to restock, prioritize based on the priority score.`,
+        };
+        setPrePrompt(updatedPrePrompt);
+      } catch (err) {
+        console.error("Error fetching restock info:", err);
+        setError("Unable to load restock information.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRestockInfo();
+  }, []);
+
+  /**
+   * Handles sending a message to the AI assistant.
+   * Updates chat history and fetches the AI's response.
+   * @async
+   * @function handleSend
+   */
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    const newMessage = { sender: "user", text: input };
+    const updatedMessages = [...messages, newMessage];
+
+    setMessages(updatedMessages);
+
+    const apiMessages = [
+      { sender: "system", text: prePrompt.text },
+      ...updatedMessages,
+    ];
+
+    try {
+      const response = await fetch(
+        "https://project-3-team-0g-backend.onrender.com/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: apiMessages }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.response) {
+        setMessages((prev) => [...prev, { sender: "ai", text: data.response }]);
+      }
+    } catch (err) {
+      console.error("Error fetching AI response:", err);
+      setError("Unable to process your request at this time.");
+    }
+
+    setInput("");
+  };
+
+  /**
+   * Handles executing the restock operation using the AI's recommendations.
+   * Validates the response and sends a POST request to update inventory.
+   * @async
+   * @function handleRestock
+   */
+  const handleRestock = async () => {
+    if (
+      messages.length === 0 ||
+      messages[messages.length - 1].sender !== "ai"
+    ) {
+      setError("No valid AI response available for restocking.");
+      return;
+    }
+
+    try {
+      const payload = JSON.parse(messages[messages.length - 1].text);
+
+      if (!Array.isArray(payload.updates)) {
+        setError("Invalid format: 'updates' must be an array.");
+        return;
+      }
+
+      for (const update of payload.updates) {
+        if (!update.name || typeof update.quantity !== "number") {
+          setError(
+            "Invalid format: each update must have a 'name' and a numeric 'quantity'."
+          );
+          return;
+        }
+      }
+
+      const response = await fetch(
+        "https://project-3-team-0g-backend.onrender.com/mass-inventory-update",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to execute restock.");
+
+      setError(null);
+      alert("Restock successful!");
+    } catch (err) {
+      console.error("Error processing restock:", err);
+      setError(
+        "Unable to process restock. Ensure the AI's response is in valid JSON format."
+      );
+    }
+  };
+
+  return (
+    &lt;>
+      &lt;Navbar />
+      &lt;LoadingBackdrop loading={loading} />
+      &lt;div className={styles.chatContainer}>
+        {error &amp;&amp; &lt;div className={styles.error}>{error}&lt;/div>}
+        &lt;div className={styles.chatMessages}>
+          {messages.map((message, index) => (
+            &lt;div
+              key={index}
+              className={
+                message.sender === "user"
+                  ? styles.userMessage
+                  : styles.aiMessage
+              }
+            >
+              {message.text}
+            &lt;/div>
+          ))}
+        &lt;/div>
+        &lt;div className={styles.inputContainer}>
+          &lt;input
+            className={styles.chatInput}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask about restock recommendations..."
+          />
+          &lt;button className={styles.sendButton} onClick={handleSend}>
+            Send
+          &lt;/button>
+        &lt;/div>
+        &lt;button className={styles.restockButton} onClick={handleRestock}>
+          Restock
+        &lt;/button>
+      &lt;/div>
+    &lt;/>
+  );
+};
+
+export default RestockScreen;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#App">App</a></li><li><a href="global.html#ChooseUser">ChooseUser</a></li><li><a href="global.html#Contrast">Contrast</a></li><li><a href="global.html#CustomerBigPlate">CustomerBigPlate</a></li><li><a href="global.html#CustomerBowl">CustomerBowl</a></li><li><a href="global.html#CustomerPlate">CustomerPlate</a></li><li><a href="global.html#CustomerScreen">CustomerScreen</a></li><li><a href="global.html#EmployeeManagement">EmployeeManagement</a></li><li><a href="global.html#EmployeeOrderScreen">EmployeeOrderScreen</a></li><li><a href="global.html#GoogleLoginButton">GoogleLoginButton</a></li><li><a href="global.html#GoogleSignUpButton">GoogleSignUpButton</a></li><li><a href="global.html#InfiniteCarousel">InfiniteCarousel</a></li><li><a href="global.html#InventoryScreen">InventoryScreen</a></li><li><a href="global.html#LoadingBackdrop">LoadingBackdrop</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Magnifier">Magnifier</a></li><li><a href="global.html#MenuBoard">MenuBoard</a></li><li><a href="global.html#MenuBoardNoninteractive">MenuBoardNoninteractive</a></li><li><a href="global.html#MenuItemCard">MenuItemCard</a></li><li><a href="global.html#MenuManagementScreen">MenuManagementScreen</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#NavbarButton">NavbarButton</a></li><li><a href="global.html#OrderHistoryScreen">OrderHistoryScreen</a></li><li><a href="global.html#OrderItem">OrderItem</a></li><li><a href="global.html#ProtectedRoute">ProtectedRoute</a></li><li><a href="global.html#ReportsScreen">ReportsScreen</a></li><li><a href="global.html#RestockScreen">RestockScreen</a></li><li><a href="global.html#SizeSelectionModal">SizeSelectionModal</a></li><li><a href="global.html#SubmitOrderScreen">SubmitOrderScreen</a></li><li><a href="global.html#TextSizeControls">TextSizeControls</a></li><li><a href="global.html#TextWrap">TextWrap</a></li><li><a href="global.html#ToggleButtonGroup">ToggleButtonGroup</a></li><li><a href="global.html#WeatherNote">WeatherNote</a></li><li><a href="global.html#WeatherTimeDisplay">WeatherTimeDisplay</a></li><li><a href="global.html#applyChanges">applyChanges</a></li><li><a href="global.html#fetchData">fetchData</a></li><li><a href="global.html#fetchOrderDetails">fetchOrderDetails</a></li><li><a href="global.html#fetchOrders">fetchOrders</a></li><li><a href="global.html#fetchPrices">fetchPrices</a></li><li><a href="global.html#fetchProductUsage">fetchProductUsage</a></li><li><a href="global.html#fetchRestockInfo">fetchRestockInfo</a></li><li><a href="global.html#fetchTranslation">fetchTranslation</a></li><li><a href="global.html#fetchWeather">fetchWeather</a></li><li><a href="global.html#formatTime">formatTime</a></li><li><a href="global.html#getRandomColor">getRandomColor</a></li><li><a href="global.html#getWeatherIcon">getWeatherIcon</a></li><li><a href="global.html#handleAddToCart">handleAddToCart</a></li><li><a href="global.html#handleCancel">handleCancel</a></li><li><a href="global.html#handleRestock">handleRestock</a></li><li><a href="global.html#handleSend">handleSend</a></li><li><a href="global.html#handleSubmit">handleSubmit</a></li><li><a href="global.html#menuItems">menuItems</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Dec 11 2024 01:12:37 GMT-0600 (Central Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

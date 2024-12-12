@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Magnifier.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Magnifier.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState, useEffect, useRef } from 'react';
+import styles from '../styles/TextSizeControls.module.css';
+import { useLocation } from 'react-router-dom';
+
+/**
+ * The Magnifier component provides a zoomed-in view of elements under the cursor 
+ * for customer-related routes. It includes a toggle button to activate or deactivate the magnifier.
+ * @component
+ */
+const Magnifier = () => {
+  /**
+   * State to determine if the magnifier is active.
+   * The initial state is fetched from localStorage.
+   * @type {boolean}
+   */
+  const [isActive, setIsActive] = useState(() => {
+    return localStorage.getItem('magnifierActive') === 'true';
+  });
+
+  /**
+   * Tracks the current position of the cursor.
+   * @type {{x: number, y: number}}
+   */
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  /**
+   * Reference to the magnifier lens element.
+   * @type {React.MutableRefObject&lt;HTMLDivElement|null>}
+   */
+  const magnifierRef = useRef(null);
+
+  /**
+   * The zoom level applied by the magnifier.
+   * @constant
+   * @type {number}
+   */
+  const zoomLevel = 1.5;
+
+  const location = useLocation();
+
+  /**
+   * Determines if the current route is customer-related.
+   * @function Magnifier~isCustomerRelatedRoute
+   * @returns {boolean} True if the current route matches a customer-related path.
+   */
+  const isCustomerRelatedRoute = () => {
+    const customerRoutes = ['/customer', '/checkout', '/submit-order', '/combo-selection'];
+    return customerRoutes.some(route => location.pathname.startsWith(route));
+  };
+
+  useEffect(() => {
+    /**
+     * Handles the mousemove event to update the magnifier's position and content.
+     * @function Magnifier~handleMouseMove
+     * @param {MouseEvent} e - The mousemove event object.
+     */
+    const handleMouseMove = (e) => {
+      if (!isActive) return;
+
+      const x = e.clientX;
+      const y = e.clientY;
+      setPosition({ x, y });
+
+      if (magnifierRef.current) {
+        const magnifier = magnifierRef.current;
+
+        // Find the element under the magnifier
+        const elementUnderMagnifier = document.elementFromPoint(x, y);
+        if (!elementUnderMagnifier) return;
+
+        let targetElement = elementUnderMagnifier;
+        while (
+          targetElement &amp;&amp;
+          !targetElement.offsetWidth &amp;&amp;
+          !targetElement.offsetHeight &amp;&amp;
+          targetElement !== document.body
+        ) {
+          targetElement = targetElement.parentElement;
+        }
+
+        // Clone content inside the magnifier lens
+        const contentClone = targetElement.cloneNode(true);
+
+        magnifier.innerHTML = '';
+        magnifier.appendChild(contentClone);
+
+        const rect = targetElement.getBoundingClientRect();
+        const relativeX = x - rect.left;
+        const relativeY = y - rect.top;
+
+        contentClone.style.position = 'absolute';
+        contentClone.style.transform = `scale(${zoomLevel})`;
+        contentClone.style.transformOrigin = 'center center';
+        contentClone.style.left = `${-relativeX * zoomLevel + magnifier.offsetWidth / 2}px`;
+        contentClone.style.top = `${-relativeY * zoomLevel + magnifier.offsetHeight / 2}px`;
+        contentClone.style.width = `${rect.width}px`;
+        contentClone.style.height = `${rect.height}px`;
+      }
+    };
+
+    // Activate or deactivate magnifier based on state and route
+    if (isActive &amp;&amp; isCustomerRelatedRoute()) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.body.style.cursor = 'none';
+    } else {
+      document.body.style.cursor = 'default';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.body.style.cursor = 'default';
+    };
+  }, [isActive, location]);
+
+  /**
+   * Toggles the magnifier on or off and updates the localStorage state.
+   * @function Magnifier~toggleMagnifier
+   */
+  const toggleMagnifier = () => {
+    const newState = !isActive;
+    setIsActive(newState);
+    localStorage.setItem('magnifierActive', newState);
+  };
+
+  if (!isCustomerRelatedRoute()) {
+    return null;
+  }
+
+  return (
+    &lt;>
+      &lt;button
+        className={`${styles.sizeButton} ${isActive ? styles.active : ''}`}
+        onClick={toggleMagnifier}
+        aria-label="Toggle magnifier"
+        style={{ position: 'fixed', bottom: '80px', left: '20px' }}
+      >
+        🔍
+      &lt;/button>
+      {isActive &amp;&amp; (
+        &lt;div
+          ref={magnifierRef}
+          className={styles.magnifierLens}
+          style={{
+            position: 'fixed',
+            pointerEvents: 'none',
+            width: '200px',
+            height: '200px',
+            border: '2px solid #af0000',
+            borderRadius: '50%',
+            overflow: 'hidden',
+            zIndex: 10000,
+            left: `${position.x}px`,
+            top: `${position.y}px`,
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: 'white',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+          }}
+        />
+      )}
+    &lt;/>
+  );
+};
+
+export default Magnifier;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#ChooseUser">ChooseUser</a></li><li><a href="global.html#Contrast">Contrast</a></li><li><a href="global.html#CustomerBigPlate">CustomerBigPlate</a></li><li><a href="global.html#CustomerBowl">CustomerBowl</a></li><li><a href="global.html#CustomerPlate">CustomerPlate</a></li><li><a href="global.html#CustomerScreen">CustomerScreen</a></li><li><a href="global.html#EmployeeManagement">EmployeeManagement</a></li><li><a href="global.html#EmployeeOrderScreen">EmployeeOrderScreen</a></li><li><a href="global.html#GoogleLoginButton">GoogleLoginButton</a></li><li><a href="global.html#GoogleSignUpButton">GoogleSignUpButton</a></li><li><a href="global.html#InfiniteCarousel">InfiniteCarousel</a></li><li><a href="global.html#InventoryScreen">InventoryScreen</a></li><li><a href="global.html#LoadingBackdrop">LoadingBackdrop</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Magnifier">Magnifier</a></li><li><a href="global.html#menuItems">menuItems</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Dec 10 2024 21:27:26 GMT-0600 (Central Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

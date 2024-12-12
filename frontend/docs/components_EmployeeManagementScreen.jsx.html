@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/EmployeeManagementScreen.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/EmployeeManagementScreen.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState, useEffect } from "react";
+import Navbar from "./Navbar";
+import axios from "axios";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Checkbox,
+  Button,
+  Typography,
+} from "@mui/material";
+import LoadingBackdrop from "./LoadingBackdrop";
+import GoogleSignUpButton from "./GoogleSignUpButton";
+
+/**
+ * Component for managing employees including adding, editing, and deleting employees.
+ * @returns None
+ */
+const EmployeeManagement = () => {
+  const [employees, setEmployees] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [googleId, setGoogleId] = useState(null);
+
+  /**
+   * Set the email of the selected employee.
+   * @param {{string}} email - The email address to set for the selected employee.
+   * @returns None
+   */
+  const setEmail = (email) => {
+    setSelectedEmployee((prevState) => ({
+      ...prevState,
+      email,
+    }));
+  };
+
+  /**
+   * Fetches a list of employees from a remote server and updates the state with the retrieved data.
+   * @param {function} setEmployees - A function to set the state with the fetched employees data.
+   * @returns {void}
+   */
+  const getEmployees = async (setEmployees) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        "https://project-3-team-0g-backend.onrender.com/employees"
+      );
+      const employees = response.data;
+
+      setEmployees(
+        employees.map((emp) => ({
+          ...emp,
+          isManager: emp.is_manager,
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Adds a new employee to the database using a POST request to the specified endpoint.
+   * @param {{object}} employee - The employee object to be added.
+   * @param {function} onSuccess - The callback function to be executed upon successful addition of the employee.
+   * @returns None
+   */
+  const addEmployee = async (employee, onSuccess) => {
+    try {
+      const response = await axios.post(
+        "https://project-3-team-0g-backend.onrender.com/employees",
+        {
+          ...employee,
+          google_id: googleId,
+        }
+      );
+      if (response.status === 201) {
+        onSuccess();
+      }
+    } catch (err) {
+      console.error("Error adding employee:", err);
+    }
+  };
+
+  /**
+   * Deletes an employee with the given employeeId from the server.
+   * @param {{number}} employeeId - The ID of the employee to delete.
+   * @param {Function} onSuccess - The callback function to execute upon successful deletion.
+   * @returns None
+   */
+  const deleteEmployee = async (employeeId, onSuccess) => {
+    try {
+      const response = await axios.delete(
+        `https://project-3-team-0g-backend.onrender.com/employees/${employeeId}`
+      );
+      if (response.status === 200) {
+        onSuccess();
+      }
+    } catch (err) {
+      console.error("Error deleting employee:", err);
+    }
+  };
+
+  useEffect(() => {
+    getEmployees(setEmployees);
+  }, []);
+
+  /**
+   * Handles the opening of a dialog for a specific employee.
+   * @param {{object}} employee - The employee object to be selected.
+   * @returns None
+   */
+  const handleOpen = (employee) => {
+    setSelectedEmployee(employee);
+    setIsAdding(false);
+    setOpen(true);
+  };
+
+  /**
+   * Handles the action of adding a new employee by setting the selected employee state
+   * with default values, resetting the Google ID state, setting the isAdding state to true,
+   * and opening the modal.
+   * @returns None
+   */
+  const handleAddOpen = () => {
+    setSelectedEmployee({
+      first_name: "",
+      last_name: "",
+      email: "",
+      phone_number: "",
+      is_manager: false,
+      password: "",
+    });
+    setGoogleId(null);
+    setIsAdding(true);
+    setOpen(true);
+  };
+
+  /**
+   * Closes the modal by setting open state to false, resetting selected employee, Google ID,
+   * and the flag for adding mode.
+   * @returns None
+   */
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedEmployee(null);
+    setGoogleId(null);
+    setIsAdding(false);
+  };
+
+  /**
+   * Handles the deletion of an employee by setting loading state to true, deleting the employee
+   * with the given employeeId, updating the list of employees, and setting loading state back to false.
+   * @param {{number}} employeeId - The ID of the employee to be deleted.
+   * @returns None
+   */
+  const handleDelete = async (employeeId) => {
+    setLoading(true);
+    await deleteEmployee(employeeId, () => {
+      getEmployees(setEmployees);
+    });
+    setLoading(false);
+  };
+
+  /**
+   * Updates an employee record with the provided data using a PUT request to the server.
+   * @param {{object}} employee - The employee object to be updated.
+   * @param {function} onSuccess - The callback function to be executed upon successful update.
+   * @returns None
+   */
+  const updateEmployee = async (employee, onSuccess) => {
+    try {
+      setLoading(true);
+
+      const response = await axios.put(
+        `https://project-3-team-0g-backend.onrender.com/employees/${employee.id}`,
+        employee
+      );
+      setLoading(false);
+
+      if (response.status === 200) {
+        onSuccess();
+      }
+    } catch (err) {
+      console.error("Error updating employee:", err);
+    }
+  };
+
+  /**
+   * Handles saving an employee by either adding a new employee or updating an existing one.
+   * If adding a new employee, it calls the addEmployee function with the selectedEmployee,
+   * then updates the list of employees and closes the modal.
+   * If updating an existing employee, it calls the updateEmployee function with the selectedEmployee,
+   * then updates the list of employees and closes the modal.
+   * @returns None
+   */
+  const handleSave = async () => {
+    if (isAdding) {
+      setLoading(true);
+
+      await addEmployee(selectedEmployee, () => {
+        getEmployees(setEmployees);
+        handleClose();
+      });
+      setLoading(false);
+    } else {
+      setLoading(true);
+
+      await updateEmployee(selectedEmployee, () => {
+        getEmployees(setEmployees);
+        handleClose();
+      });
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Update the selected employee object with a new value for a specific field.
+   * @param {{string}} field - The field in the selected employee object to update.
+   * @param {{any}} value - The new value to assign to the specified field.
+   * @returns None
+   */
+  const handleChange = (field, value) => {
+    setSelectedEmployee({ ...selectedEmployee, [field]: value });
+  };
+
+  return (
+    &lt;div>
+      &lt;LoadingBackdrop loading={loading} />
+      &lt;TableContainer
+        component={Paper}
+        style={{
+          marginTop: "20px",
+          maxHeight: "70vh", // Set a fixed height for the table container
+          overflowY: "auto", // Enable vertical scrolling
+        }}
+      >
+        &lt;Table stickyHeader>
+          &lt;TableHead>
+            &lt;TableRow>
+              &lt;TableCell>ID&lt;/TableCell>
+              &lt;TableCell>First Name&lt;/TableCell>
+              &lt;TableCell>Last Name&lt;/TableCell>
+              &lt;TableCell>Email&lt;/TableCell>
+              &lt;TableCell>Phone Number&lt;/TableCell>
+              &lt;TableCell>Is Manager&lt;/TableCell>
+              &lt;TableCell>Actions&lt;/TableCell>
+            &lt;/TableRow>
+          &lt;/TableHead>
+          &lt;TableBody>
+            {employees.map((employee) => (
+              &lt;TableRow key={employee.id}>
+                &lt;TableCell>{employee.id}&lt;/TableCell>
+                &lt;TableCell>{employee.first_name}&lt;/TableCell>
+                &lt;TableCell>{employee.last_name}&lt;/TableCell>
+                &lt;TableCell>{employee.email}&lt;/TableCell>
+                &lt;TableCell>{employee.phone_number}&lt;/TableCell>
+                &lt;TableCell>{employee.is_manager ? "Yes" : "No"}&lt;/TableCell>
+                &lt;TableCell>
+                  &lt;Button
+                    variant="outlined"
+                    onClick={() => handleOpen(employee)}
+                  >
+                    Update
+                  &lt;/Button>
+                  &lt;Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => handleDelete(employee.id)}
+                  >
+                    Delete
+                  &lt;/Button>
+                &lt;/TableCell>
+              &lt;/TableRow>
+            ))}
+          &lt;/TableBody>
+        &lt;/Table>
+      &lt;/TableContainer>
+
+      {selectedEmployee &amp;&amp; (
+        &lt;Dialog open={open} onClose={handleClose}>
+          &lt;DialogTitle>
+            &lt;div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              &lt;span>{isAdding ? "Add Employee" : "Update Employee"}&lt;/span>
+              &lt;Button
+                onClick={handleClose}
+                style={{ minWidth: "auto", padding: 0, color: "red" }}
+              >
+                X
+              &lt;/Button>
+            &lt;/div>
+          &lt;/DialogTitle>
+          &lt;DialogContent>
+            &lt;TextField
+              margin="dense"
+              label="First Name"
+              fullWidth
+              value={selectedEmployee.first_name}
+              onChange={(e) => handleChange("first_name", e.target.value)}
+            />
+            &lt;TextField
+              margin="dense"
+              label="Last Name"
+              fullWidth
+              value={selectedEmployee.last_name}
+              onChange={(e) => handleChange("last_name", e.target.value)}
+            />
+            &lt;TextField
+              margin="dense"
+              label="Phone Number"
+              fullWidth
+              value={selectedEmployee.phone_number}
+              onChange={(e) => handleChange("phone_number", e.target.value)}
+            />
+            &lt;div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginTop: "10px",
+              }}
+            >
+              &lt;Checkbox
+                checked={selectedEmployee.is_manager}
+                onChange={(e) => handleChange("is_manager", e.target.checked)}
+              />
+              &lt;label>Is Manager&lt;/label>
+            &lt;/div>
+            &lt;TextField
+              margin="dense"
+              label="Email"
+              fullWidth
+              value={selectedEmployee.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+            />
+            &lt;TextField
+              margin="dense"
+              label={
+                googleId
+                  ? "Password not needed if Google is authenticated"
+                  : "Password"
+              }
+              type="password"
+              fullWidth
+              value={selectedEmployee.password || ""}
+              onChange={(e) => handleChange("password", e.target.value)}
+              disabled={!!googleId} // Disable field if googleId is set
+              placeholder={
+                googleId ? "Password not needed if Google is authenticated" : ""
+              }
+            />
+            &lt;Typography
+              style={{
+                textAlign: "center",
+                margin: "5px 0",
+                color: "lightgray",
+                fontWeight: "bold",
+              }}
+            >
+              or
+            &lt;/Typography>
+            &lt;div style={{ marginTop: "10px" }}>
+              &lt;GoogleSignUpButton
+                setGoogleId={setGoogleId}
+                setEmail={setEmail}
+              />
+            &lt;/div>
+            &lt;Button
+              onClick={handleSave}
+              variant="contained"
+              style={{
+                marginTop: "20px",
+                width: "100%",
+                backgroundColor: "red",
+                color: "white",
+              }}
+            >
+              {isAdding ? "Create Employee" : "Save Changes"}
+            &lt;/Button>
+          &lt;/DialogContent>
+        &lt;/Dialog>
+      )}
+
+      &lt;Button
+        variant="contained"
+        color="primary"
+        style={{ marginTop: "20px", marginLeft: "20px" }}
+        onClick={handleAddOpen}
+      >
+        Add Employee
+      &lt;/Button>
+    &lt;/div>
+  );
+};
+
+const EmployeeManagementScreen = () => {
+  return (
+    &lt;>
+      &lt;Navbar />
+      &lt;EmployeeManagement />
+    &lt;/>
+  );
+};
+
+export default EmployeeManagementScreen;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#App">App</a></li><li><a href="global.html#ChooseUser">ChooseUser</a></li><li><a href="global.html#Contrast">Contrast</a></li><li><a href="global.html#CustomerBigPlate">CustomerBigPlate</a></li><li><a href="global.html#CustomerBowl">CustomerBowl</a></li><li><a href="global.html#CustomerPlate">CustomerPlate</a></li><li><a href="global.html#CustomerScreen">CustomerScreen</a></li><li><a href="global.html#EmployeeManagement">EmployeeManagement</a></li><li><a href="global.html#EmployeeOrderScreen">EmployeeOrderScreen</a></li><li><a href="global.html#GoogleLoginButton">GoogleLoginButton</a></li><li><a href="global.html#GoogleSignUpButton">GoogleSignUpButton</a></li><li><a href="global.html#InfiniteCarousel">InfiniteCarousel</a></li><li><a href="global.html#InventoryScreen">InventoryScreen</a></li><li><a href="global.html#LoadingBackdrop">LoadingBackdrop</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Magnifier">Magnifier</a></li><li><a href="global.html#MenuBoard">MenuBoard</a></li><li><a href="global.html#MenuBoardNoninteractive">MenuBoardNoninteractive</a></li><li><a href="global.html#MenuItemCard">MenuItemCard</a></li><li><a href="global.html#MenuManagementScreen">MenuManagementScreen</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#NavbarButton">NavbarButton</a></li><li><a href="global.html#OrderHistoryScreen">OrderHistoryScreen</a></li><li><a href="global.html#OrderItem">OrderItem</a></li><li><a href="global.html#ProtectedRoute">ProtectedRoute</a></li><li><a href="global.html#ReportsScreen">ReportsScreen</a></li><li><a href="global.html#RestockScreen">RestockScreen</a></li><li><a href="global.html#SizeSelectionModal">SizeSelectionModal</a></li><li><a href="global.html#SubmitOrderScreen">SubmitOrderScreen</a></li><li><a href="global.html#TextSizeControls">TextSizeControls</a></li><li><a href="global.html#TextWrap">TextWrap</a></li><li><a href="global.html#ToggleButtonGroup">ToggleButtonGroup</a></li><li><a href="global.html#WeatherNote">WeatherNote</a></li><li><a href="global.html#WeatherTimeDisplay">WeatherTimeDisplay</a></li><li><a href="global.html#applyChanges">applyChanges</a></li><li><a href="global.html#fetchData">fetchData</a></li><li><a href="global.html#fetchOrderDetails">fetchOrderDetails</a></li><li><a href="global.html#fetchOrders">fetchOrders</a></li><li><a href="global.html#fetchPrices">fetchPrices</a></li><li><a href="global.html#fetchProductUsage">fetchProductUsage</a></li><li><a href="global.html#fetchRestockInfo">fetchRestockInfo</a></li><li><a href="global.html#fetchTranslation">fetchTranslation</a></li><li><a href="global.html#fetchWeather">fetchWeather</a></li><li><a href="global.html#formatTime">formatTime</a></li><li><a href="global.html#getRandomColor">getRandomColor</a></li><li><a href="global.html#getWeatherIcon">getWeatherIcon</a></li><li><a href="global.html#handleAddToCart">handleAddToCart</a></li><li><a href="global.html#handleCancel">handleCancel</a></li><li><a href="global.html#handleRestock">handleRestock</a></li><li><a href="global.html#handleSend">handleSend</a></li><li><a href="global.html#handleSubmit">handleSubmit</a></li><li><a href="global.html#menuItems">menuItems</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Dec 11 2024 01:12:37 GMT-0600 (Central Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

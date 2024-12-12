@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: OrderHistoryScreen.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: OrderHistoryScreen.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useEffect, useState } from "react";
+import Navbar from "./Navbar";
+import LoadingBackdrop from "./LoadingBackdrop";
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Paper,
+  TablePagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+
+/**
+ * ${1:Description placeholder}
+ *
+ * @returns {${2:*}}
+ */
+const OrderHistoryScreen = () => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderDetails, setOrderDetails] = useState([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [customerFilter, setCustomerFilter] = useState("");
+  const [orderDateFilter, setOrderDateFilter] = useState("");
+  const [employeeFilter, setEmployeeFilter] = useState("");
+  const [priceFilter, setPriceFilter] = useState("");
+  const [appliedFilters, setAppliedFilters] = useState({
+    customer: "",
+    date: "",
+    employee: "",
+    price: "",
+  });
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: rowsPerPage.toString(),
+        customer: appliedFilters.customer,
+        date: appliedFilters.date,
+        employee: appliedFilters.employee,
+        price: appliedFilters.price,
+      });
+
+      const response = await fetch(
+        `https://project-3-team-0g-backend.onrender.com/orders?${queryParams.toString()}`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch order history");
+      }
+
+      const data = await response.json();
+      setOrders(data.orders);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchOrderDetails = async (orderId) => {
+    try {
+      const response = await fetch(
+        `https://project-3-team-0g-backend.onrender.com/orders/${orderId}/details`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch order details");
+      }
+      const data = await response.json();
+      setOrderDetails(data.details);
+    } catch (err) {
+      console.error("Error fetching order details:", err);
+      setOrderDetails([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [page, rowsPerPage, appliedFilters]);
+
+  const handlePageChange = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleRowsPerPageChange = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      customer: customerFilter,
+      date: orderDateFilter,
+      employee: employeeFilter,
+      price: priceFilter,
+    });
+    setPage(0);
+  };
+
+  const handleRowDoubleClick = async (orderId) => {
+    setSelectedOrder(orderId);
+    await fetchOrderDetails(orderId);
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setOrderDetails([]);
+  };
+
+  return (
+    &lt;>
+      &lt;Navbar />
+      &lt;LoadingBackdrop loading={loading} />
+      &lt;Box sx={{ padding: "20px" }}>
+        &lt;Typography variant="h4" gutterBottom>
+          Order History
+        &lt;/Typography>
+        {error &amp;&amp; (
+          &lt;Typography color="error" sx={{ marginBottom: "20px" }}>
+            {error}
+          &lt;/Typography>
+        )}
+        &lt;Box display="flex" gap="10px" marginBottom="20px">
+          &lt;TextField
+            variant="outlined"
+            size="small"
+            label="Customer Name"
+            value={customerFilter}
+            onChange={(e) => setCustomerFilter(e.target.value)}
+          />
+          &lt;TextField
+            variant="outlined"
+            size="small"
+            label="Order Date"
+            value={orderDateFilter}
+            onChange={(e) => setOrderDateFilter(e.target.value)}
+          />
+          &lt;TextField
+            variant="outlined"
+            size="small"
+            label="Employee Name"
+            value={employeeFilter}
+            onChange={(e) => setEmployeeFilter(e.target.value)}
+          />
+          &lt;TextField
+            variant="outlined"
+            size="small"
+            label="Total Price"
+            value={priceFilter}
+            onChange={(e) => setPriceFilter(e.target.value)}
+          />
+          &lt;Button
+            variant="contained"
+            color="primary"
+            onClick={handleApplyFilters}
+          >
+            Apply Filters
+          &lt;/Button>
+        &lt;/Box>
+        &lt;TableContainer component={Paper}>
+          &lt;Table>
+            &lt;TableHead>
+              &lt;TableRow>
+                &lt;TableCell>
+                  &lt;strong>Customer Name&lt;/strong>
+                &lt;/TableCell>
+                &lt;TableCell>
+                  &lt;strong>Order Date&lt;/strong>
+                &lt;/TableCell>
+                &lt;TableCell>
+                  &lt;strong>Employee Name&lt;/strong>
+                &lt;/TableCell>
+                &lt;TableCell>
+                  &lt;strong>Total Price ($)&lt;/strong>
+                &lt;/TableCell>
+              &lt;/TableRow>
+            &lt;/TableHead>
+            &lt;TableBody>
+              {orders.map((order) => (
+                &lt;TableRow
+                  key={order.id}
+                  onDoubleClick={() => handleRowDoubleClick(order.id)}
+                >
+                  &lt;TableCell>{order.customer_name}&lt;/TableCell>
+                  &lt;TableCell>
+                    {new Date(order.order_date).toLocaleString()}
+                  &lt;/TableCell>
+                  &lt;TableCell>
+                    {order.employee_first_name} {order.employee_last_name}
+                  &lt;/TableCell>
+                  &lt;TableCell>{order.total_price}&lt;/TableCell>
+                &lt;/TableRow>
+              ))}
+            &lt;/TableBody>
+          &lt;/Table>
+        &lt;/TableContainer>
+        &lt;TablePagination
+          component="div"
+          count={-1}
+          page={page}
+          onPageChange={handlePageChange}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          labelRowsPerPage="Rows per page"
+        />
+      &lt;/Box>
+
+      &lt;Dialog open={dialogOpen} onClose={handleCloseDialog}>
+        &lt;DialogTitle>Order Details&lt;/DialogTitle>
+        &lt;DialogContent>
+          {orderDetails.length > 0 ? (
+            orderDetails.map((meal, index) => (
+              &lt;Typography
+                key={index}
+                variant="body1"
+                sx={{ marginBottom: "10px" }}
+              >
+                &lt;strong>{meal.meal_type}:&lt;/strong> {meal.items.join(", ")}
+              &lt;/Typography>
+            ))
+          ) : (
+            &lt;Typography>No details available for this order.&lt;/Typography>
+          )}
+        &lt;/DialogContent>
+        &lt;DialogActions>
+          &lt;Button onClick={handleCloseDialog} color="primary">
+            Close
+          &lt;/Button>
+        &lt;/DialogActions>
+      &lt;/Dialog>
+    &lt;/>
+  );
+};
+
+export default OrderHistoryScreen;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#ChooseUser">ChooseUser</a></li><li><a href="global.html#Contrast">Contrast</a></li><li><a href="global.html#CustomerBigPlate">CustomerBigPlate</a></li><li><a href="global.html#CustomerBowl">CustomerBowl</a></li><li><a href="global.html#CustomerPlate">CustomerPlate</a></li><li><a href="global.html#CustomerScreen">CustomerScreen</a></li><li><a href="global.html#EmployeeManagement">EmployeeManagement</a></li><li><a href="global.html#EmployeeOrderScreen">EmployeeOrderScreen</a></li><li><a href="global.html#GoogleLoginButton">GoogleLoginButton</a></li><li><a href="global.html#GoogleSignUpButton">GoogleSignUpButton</a></li><li><a href="global.html#InfiniteCarousel">InfiniteCarousel</a></li><li><a href="global.html#InventoryScreen">InventoryScreen</a></li><li><a href="global.html#LoadingBackdrop">LoadingBackdrop</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#MenuManagementScreen">MenuManagementScreen</a></li><li><a href="global.html#OrderHistoryScreen">OrderHistoryScreen</a></li><li><a href="global.html#OrderItem">OrderItem</a></li><li><a href="global.html#menuItems">menuItems</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Dec 10 2024 21:24:18 GMT-0600 (Central Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
