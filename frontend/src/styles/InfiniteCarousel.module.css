@@ -1,0 +1,25 @@
+/* InfiniteCarousel.module.css */
+.carousel {
+  position: relative;
+  width: 100%;
+  height: 100%; /* Set the fixed height of the container */
+  overflow: hidden;
+}
+
+.carouselTrack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 50px;
+}
+
+.transition {
+  transition: transform 0.1s linear;
+}
+
+.carouselItem {
+  flex-shrink: 0;
+  height: 200px; /* Adjust the height as needed */
+  padding: 10px;
+  box-sizing: border-box;
+}

@@ -1,0 +1,27 @@
+.controls {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 1000;
+  }
+  
+  .sizeButton {
+    background-color: #af0000;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: calc(14px * var(--text-size-multiplier));
+    transition: background-color 0.2s;
+  }
+  
+  .sizeButton:hover {
+    background-color: #8e0000;
+  }
+  
+  .sizeButton.active {
+    background-color: #680202;
+  }

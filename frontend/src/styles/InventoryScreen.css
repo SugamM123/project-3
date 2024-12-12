@@ -1,0 +1,46 @@
+.inventory-container{ /* overall container */
+    margin: auto; 
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 55px; 
+    max-width: 1000px; 
+} 
+.inventory-container h1{
+    margin-bottom: 7.5px; /* title */
+    text-align: center; 
+} 
+.inventory-container form{ /* entry boxes */
+    flex-direction: column; 
+    margin-bottom:  15px; 
+    display: flex; 
+    gap: 2px; 
+} 
+.inventory-container form input, .inventory-container form button{
+    /* inputs */
+    font-size: 19px; 
+    padding: 7.5px; 
+} 
+.inventory-container ul li{ /* inve items */
+    border-radius: 4px; 
+    margin-bottom: 5px; 
+    display: flex; 
+    justify-content: space-between;  
+    padding: 10px; 
+    border: 2px solid #ae9494;
+} 
+.inventory-container ul li button{ /* buttons for edit/delete */
+    background-color: red; 
+    color: white; 
+    margin-right: 5px; 
+    cursor: pointer; 
+    padding: 2px 8px;  
+    border-radius: 4px; 
+} 
+.inventory-container form button{ /* main button */
+    color: white; 
+    cursor: pointer; 
+    border-radius: 4px; 
+    background-color: red; 
+} 
+.inventory-container button:hover{ /* change colors when over it */
+    background-color: maroon;
+}

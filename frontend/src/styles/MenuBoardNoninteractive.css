@@ -1,0 +1,20 @@
+.ovrbrd{ max-width: flex; } /* styles for menu board components, headers, images, descriptions */
+.ovrsc{ 
+    font-size: 45px; 
+    text-align: center; } 
+.ovritms{ 
+    justify-content: center; 
+    display: flex; 
+    gap: 10px; 
+    flex-wrap: wrap; } 
+.ovrc{ 
+    flex: flex; 
+    max-width: 250px; 
+    text-align: center; } 
+.allimgs{ 
+    height: 225px; 
+    width: 100%; } 
+.itmn{ font-size: 22.5px; } 
+.scrip{ 
+    color: rgb(0, 0, 0);
+    font-size: 15px; }

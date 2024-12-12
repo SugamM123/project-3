@@ -1,0 +1,20 @@
+
+.navButton {
+    background-color: #af0000;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  .navButton:hover {
+    background-color: #880000;
+  }
+
+  .selected {
+    background-color: #680202; 
+  }
+
+  .navButton.selected:hover {
+    background-color: #680202;
+  }

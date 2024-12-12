@@ -1,0 +1,57 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: white;
+  }
+  
+  .logoContainer {
+    margin-bottom: 20px;
+  }
+  
+  .logo {
+    width: 200px;
+    height: auto;
+  }
+  
+  .beginButton {
+    background-color: #af0000;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  
+  .beginButton:hover {
+    background-color: #8e0000;
+  }
+
+  .userTypeButtons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .userTypeButton {
+    padding: 10px 20px;
+    font-size: 18px;
+    background-color: #f0f0f0;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .userTypeButton:hover {
+    background-color: #e0e0e0;
+  }
+
+  .languageButton {
+    margin-left: 5px;
+    margin-right: 5px;
+  }
