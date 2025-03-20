@@ -2,8 +2,7 @@
 
 A comprehensive point-of-sale system for Panda Express restaurants that includes both customer and employee interfaces, featuring real-time order management, inventory tracking, and sales analytics.
 
-# Hosted documentation wiki
-[https://project-3-team-0g.onrender.com/global.html#App](https://project-3-team-0g.onrender.com/global.html#App)
+
 
 ## Features
 
@@ -141,7 +140,7 @@ https://project-3-team-0g-frontend.onrender.com/
 
 ## Acknowledgments
 
-- Team 0G members
+- Team 0G members: Alex, Nashif, Bryant, and Logan
 - Project advisors
 - Texas A&M University
 
